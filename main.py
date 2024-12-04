@@ -1,11 +1,13 @@
+import glob, os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
 # File path
-file_path = '2022-09-01 415MHz RvsB 3.50K.txt'
-file_path2 = '2022-09-01 415MHz RvsB 3.50K-2.txt'
-pathlist = [file_path, file_path2]
+TestPath=r"D:\PhD\QPR Data\2022-04-04 - test #36 - ARIES B-3.19 Siegen SIS"
+
+pattern = os.path.join(TestPath, "*MHz*.txt")
+pathlist = glob.glob(pattern)
 
 nfilelist=[]
 # Load the file into a DataFrame
@@ -28,9 +30,12 @@ nfile['Date'] = pd.to_datetime(nfile['Date'] + ' ' + nfile['Time'], format='%Y/%
 nfile.drop(columns=["Time"], inplace=True)
 nfile.rename(columns={"Date":"Date_Time"}, inplace=True)
 
-pd.set_option('display.max_rows', None)
+pd.set_option('display.max_rows', 100)
 print(nfile.info())
-print(nfile)
+#print(nfile["Surface Resistance [nOhm]"])
+
+nan_rows = nfile[nfile["Surface Resistance [nOhm]"].isna()]
+print(nan_rows)
 #ax = nfile.plot.scatter(x="Peak Field on Sample [mT]", y="Surface Resistance [nOhm]")
 
 # Save the plot as a vector-based PDF
