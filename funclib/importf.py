@@ -5,20 +5,18 @@ import numpy as np
 file_path = '2022-09-01 415MHz RvsB 3.50K.txt'
 
 # Load the file into a DataFrame
-df = pd.read_csv(
+nfile = pd.read_csv(
     file_path,
-    sep='\t',  # Change to ' ' for space-separated files
-    header=0,  # Assumes first row contains column names
-    na_values=['NaN', 'null', 'N/A'],  # Handle missing values
-    parse_dates=['Date'],  # Replace 'date_column' with actual date column name
-    dtype={
-        'float_column': float,  # Replace with actual column names
-        'int_column': int,
-        'exponential_column': float,
-    }
+    sep="\t", 
+    header=0,
+    na_values="NaN",
+    date_format="%y/%m/%d",
+    parse_dates=["Date"]
 )
 
 # Inspect the data
-print(df.info())
+#print(nfile.info())
+a=nfile.head(8)
+print(type(a))
 #print(df.head())
 
