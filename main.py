@@ -13,6 +13,7 @@ pattern = os.path.join(TestPath, "*MHz*.txt")
 pathlist = glob.glob(pattern)
 
 nfilelist=[]
+
 # Load the file into a DataFrame
 for file_path in pathlist:
     procfile= pd.read_csv(
