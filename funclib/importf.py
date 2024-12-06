@@ -15,55 +15,98 @@ class color:
    UNDERLINE = '\033[4m'
    END = '\033[0m'
 
-class paramname:
-    pass
+class FieldNames:
+    SET_TEMP = "Set Temp [K]"
+    SET_FREQ = "Set Freq [Hz]"
+    DUTY_CYCLE = "Duty Cycle [%]"
+    PULSE_PERIOD = "Pulse Period [ms]"
+    P_FORW = "P_forw (giga)"
+    P_REFL = "P_refl (giga)"
+    P_TRANS = "P_trans (giga)"
+    CW_POWER = "CW Power (Tek)"
+    PULSE_POWER = "Pulse Power (Tek)"
+    PEAK_POWER = "Peak Power (Tek)"
+    DC_MEAS = "DC meas [%] (Tek)"
+    P_TRANS_CALC = "P_trans for calc"
+    FREQ_MEAS = "Freq. (meas.) [Hz]"
+    Q_FPC = "Q_FPC"
+    Q_PROBE = "Q_Probe"
+    C1 = "c1"
+    C2 = "c2"
+    HEATER_RESISTANCE = "Heater Resistance [Ohm]"
+    REF_V = "Ref. Voltage"
+    HEATER_V = "Heater Voltage"
+    HEATER_P = "Heater Power [mW]"
+    P_DISS = "P_diss [mW]"
+    PEAK_FIELD = "Peak Field on Sample [mT]"
+    RS = "Surface Resistance [nOhm]"
+    SENS_A = "LS336 A [K]"
+    SENS_B = "LS336 B [K]"
+    SENS_C = "LS336 C [K]"
+    SENS_D = "LS336 D [K]"
+    MAGNETIC_FIELD = "Magnetic Field [uT]"
+    PLL_ATTENUATOR = "PLL Attenuator [dB]"
+    PLL_PHASE = "PLL Phase [deg]"
+    KEYSIGHT_FORW = "Keysight forw [dBm]"
+    KEYSIGHT_REFL = "Keysight refl [dBm]"
+    KEYSIGHT_TRANS = "Keysight trans [dBm]"
+    DC_CURRENT = "DC current [mA]"
+    DC_REF_CURRENT = "DC Ref current [mA]"
+    FREQ_HAMEG = "Freq Hameg [Hz]"
+
+def inRangeindex(data,param,value,tol):
+    index_list = data[(data[param]>=(value-tol)) & (data[param]<=(value+tol))].index
+
+    return index_list 
+
+def PrintFilteredData(data, param, value, tol, *args):
+    """
+    Filters data based on a parameter that lies within a specified range.
+
+    Parameters:
+        data (pd.DataFrame): The DataFrame to filter.
+        param (str): Column name for filtering.
+        value (float): Center value of the range.
+        tol (float): Tolerance for the range.
+        *args (str): Column names to display. If empty, displays all columns.
+
+    Returns:
+        pd.DataFrame: Filtered data with specified columns.
+    """
+    
+    selected_columns = list(args) if args else data.columns  # Use all columns if no args provided
+    ReturnedData = data.loc[(data[param] >= (value - tol)) & (data[param] <= (value + tol)), selected_columns]
+    
+    print(ReturnedData)
+    
+    return ReturnedData
 
 
 class HandleTest:
     def __init__(self,Path):
         self.TestPath=Path
-        self.fieldNames = {
-            "Set Temp": "Set Temp [K]",
-            "Set Freq": "Set Freq [Hz]",
-            "Duty Cycle": "Duty Cycle [%]",
-            "Pulse Period": "Pulse Period [ms]",
-            "P_forw": "P_forw (giga)",
-            "P_refl": "P_refl (giga)",
-            "P_trans": "P_trans (giga)",
-            "CW Power": "CW Power (Tek)",
-            "Pulse Power": "Pulse Power (Tek)",
-            "Peak Power": "Peak Power (Tek)",
-            "DC meas": "DC meas [%] (Tek)",
-            "P_trans calc": "P_trans for calc",
-            "Freq. (meas.)": "Freq. (meas.) [Hz]",
-            "Q_FPC": "Q_FPC",
-            "Q_Probe": "Q_Probe",
-            "c1": "c1",
-            "c2": "c2",
-            "Heater Resistance": "Heater Resistance [Ohm]",
-            "Ref. V": "Ref. Voltage",
-            "Heater V": "Heater Voltage",
-            "Heater P": "Heater Power [mW]",
-            "P_diss": "P_diss [mW]",
-            "Peak Field": "Peak Field on Sample [mT]",
-            "Rs": "Surface Resistance [nOhm]",
-            "Sens A": "LS336 A [K]",
-            "Sens B": "LS336 B [K]",
-            "Sens C": "LS336 C [K]",
-            "Sens D": "LS336 D [K]",
-            "Magnetic Field": "Magnetic Field [uT]",
-            "PLL Attenuator": "PLL Attenuator [dB]",
-            "PLL Phase": "PLL Phase [deg]",
-            "Keysight forw": "Keysight forw [dBm]",
-            "Keysight refl": "Keysight refl [dBm]",
-            "Keysight trans": "Keysight trans [dBm]",
-            "DC current": "DC current [mA]",
-            "DC Ref current": "DC Ref current [mA]",
-            "Freq Hameg": "Freq Hameg [Hz]"
-        }
     
     ## The function to load All data based on Pattern
     def LoadData(self,pattern="*MHz*.txt"):
+        """
+        Loads and processes data files matching a specified pattern.
+
+        This function searches for files within the specified eqrlier 
+        directory that match the provided filename pattern. It reads the 
+        content of the matching files into a pandas DataFrame, processes the data 
+        (e.g., adds a "Run" column and filename), and combines all files into a 
+        single DataFrame.
+
+        Parameters:
+            pattern (str, optional): A wildcard pattern to search for files.
+                                    Defaults to "*MHz*.txt".
+
+        Returns:
+            pd.DataFrame: A DataFrame containing the combined and processed data
+                        from all matching files. If an exception occurs, an
+                        empty DataFrame is returned.
+        """
+        
         pattern = os.path.join(self.TestPath, pattern)
         pathlist = glob.glob(pattern)
 
@@ -106,9 +149,9 @@ class HandleTest:
         pass
     
     def plotHistogram(self,**kwargs):
-        x = kwargs.get("x", self.fieldNames["Peak Field"])
-        y = kwargs.get("y", self.fieldNames["Rs"]) #second scatter plot
-        ParamName = kwargs.get("y", self.fieldNames["Sens B"]) #parameter
+        x = kwargs.get("x", FieldNames.PEAK_FIELD)
+        y = kwargs.get("y", FieldNames.RS) #second scatter plot
+        ParamName = kwargs.get("y", FieldNames.SENS_B) #parameter
         ParamVal = kwargs.get("ParamVal", 2.5)
         ParamTol = kwargs.get("ParamTol", 0.05)
         print(ParamVal)
@@ -127,6 +170,7 @@ class HandleTest:
             # Filter only data corresponding to entered Run N list
             Dataset = self.Data[self.Data["Run"].isin(Run) & (self.Data[ParamName]<=(ParamVal+ParamTol)) & (self.Data[ParamName] >= (ParamVal-ParamTol))] 
 
+        self.FilteredData = Dataset
         try:
             print(Dataset[ParamName])
             if Dataset.empty:
