@@ -18,6 +18,45 @@ class color:
 class HandleTest:
     def __init__(self,Path):
         self.TestPath=Path
+        self.fieldNames = {
+            "Set Temp": "Set Temp [K]",
+            "Set Freq": "Set Freq [Hz]",
+            "Duty Cycle": "Duty Cycle [%]",
+            "Pulse Period": "Pulse Period [ms]",
+            "P_forw": "P_forw (giga)",
+            "P_refl": "P_refl (giga)",
+            "P_trans": "P_trans (giga)",
+            "CW Power": "CW Power (Tek)",
+            "Pulse Power": "Pulse Power (Tek)",
+            "Peak Power": "Peak Power (Tek)",
+            "DC meas": "DC meas [%] (Tek)",
+            "P_trans calc": "P_trans for calc",
+            "Freq. (meas.)": "Freq. (meas.) [Hz]",
+            "Q_FPC": "Q_FPC",
+            "Q_Probe": "Q_Probe",
+            "c1": "c1",
+            "c2": "c2",
+            "Heater Resistance": "Heater Resistance [Ohm]",
+            "Ref. V": "Ref. Voltage",
+            "Heater V": "Heater Voltage",
+            "Heater P": "Heater Power [mW]",
+            "P_diss": "P_diss [mW]",
+            "Peak Field": "Peak Field on Sample [mT]",
+            "Rs": "Surface Resistance [nOhm]",
+            "Sens A": "LS336 A [K]",
+            "Sens B": "LS336 B [K]",
+            "Sens C": "LS336 C [K]",
+            "Sens D": "LS336 D [K]",
+            "Magnetic Field": "Magnetic Field [uT]",
+            "PLL Attenuator": "PLL Attenuator [dB]",
+            "PLL Phase": "PLL Phase [deg]",
+            "Keysight forw": "Keysight forw [dBm]",
+            "Keysight refl": "Keysight refl [dBm]",
+            "Keysight trans": "Keysight trans [dBm]",
+            "DC current": "DC current [mA]",
+            "DC Ref current": "DC Ref current [mA]",
+            "Freq Hameg": "Freq Hameg [Hz]"
+        }
     
     ## The function to load All data based on Pattern
     def LoadData(self,pattern="*MHz*.txt"):
@@ -63,9 +102,12 @@ class HandleTest:
         pass
     
     def plotHistogram(self,**kwargs):
-        x = kwargs.get("x", "Peak Field on Sample [mT]")
-        
-        y = kwargs.get("y", "Surface Resistance [nOhm]")
+        x = kwargs.get("x", self.fieldNames["Peak Field"])
+        y = kwargs.get("y", self.fieldNames["Rs"]) #second scatter plot
+        ParamName = kwargs.get("y", self.fieldNames["Sens A"]) #parameter
+        ParamVal = kwargs.get("step", 2.5)
+        ParamTol = kwargs.get("step", 0.05)
+
         step = kwargs.get("step", 1.0)
         Run = kwargs.get("Run", None)
 
@@ -74,9 +116,11 @@ class HandleTest:
 
         # Filtering data Corresponding to RunN
         if Run  == [None]:
-            Dataset = self.Data  # Take all Runs if None is entered
+            # Take all Runs if None is entered
+            Dataset = self.Data[(self.Data[ParamName]<=(ParamVal+ParamTol)) & (self.Data[ParamName] >= (ParamVal-ParamTol))]
         else:
-            Dataset = self.Data[self.Data["Run"].isin(Run)] # Filter only data corresponding to entered Run N list
+            # Filter only data corresponding to entered Run N list
+            Dataset = self.Data[self.Data["Run"].isin(Run) & (self.Data[ParamName]<=(ParamVal+ParamTol)) & (self.Data[ParamName] >= (ParamVal-ParamTol))] 
 
         try:
 
