@@ -15,6 +15,10 @@ class color:
    UNDERLINE = '\033[4m'
    END = '\033[0m'
 
+class paramname:
+    pass
+
+
 class HandleTest:
     def __init__(self,Path):
         self.TestPath=Path
@@ -104,9 +108,10 @@ class HandleTest:
     def plotHistogram(self,**kwargs):
         x = kwargs.get("x", self.fieldNames["Peak Field"])
         y = kwargs.get("y", self.fieldNames["Rs"]) #second scatter plot
-        ParamName = kwargs.get("y", self.fieldNames["Sens A"]) #parameter
-        ParamVal = kwargs.get("step", 2.5)
-        ParamTol = kwargs.get("step", 0.05)
+        ParamName = kwargs.get("y", self.fieldNames["Sens B"]) #parameter
+        ParamVal = kwargs.get("ParamVal", 2.5)
+        ParamTol = kwargs.get("ParamTol", 0.05)
+        print(ParamVal)
 
         step = kwargs.get("step", 1.0)
         Run = kwargs.get("Run", None)
@@ -123,9 +128,9 @@ class HandleTest:
             Dataset = self.Data[self.Data["Run"].isin(Run) & (self.Data[ParamName]<=(ParamVal+ParamTol)) & (self.Data[ParamName] >= (ParamVal-ParamTol))] 
 
         try:
-
+            print(Dataset[ParamName])
             if Dataset.empty:
-                raise ValueError("No Data found with Run!!")
+                raise ValueError("No Data found with Run and/or Parameter!!")
             
             MaxX=Dataset[x].max()+step
             self.HistoX=list(np.arange(0,MaxX,step))
