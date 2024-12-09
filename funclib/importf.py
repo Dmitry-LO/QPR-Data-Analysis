@@ -16,6 +16,16 @@ class color:
    END = '\033[0m'
 
 class FieldNames:
+    """
+    Column names in the data file. Edit if something changes!
+
+    Key Fields:
+        PEAK_FIELD: "Peak Field on Sample [mT]".
+        SENS_A: "LS336 A [K]" (similarly for B, C, D).
+        SET_TEMP: Set Temp [K].
+        RS: Surface Resistance [nOhm].
+    """
+    
     SET_TEMP = "Set Temp [K]"
     SET_FREQ = "Set Freq [Hz]"
     DUTY_CYCLE = "Duty Cycle [%]"
@@ -53,41 +63,53 @@ class FieldNames:
     DC_CURRENT = "DC current [mA]"
     DC_REF_CURRENT = "DC Ref current [mA]"
     FREQ_HAMEG = "Freq Hameg [Hz]"
+    DATE = "Date"
+    TIME = "Time"
+    # Those columns will be added:
+    RUN = "Run"
+    FNAME = "File Name"
+    DATETIME = "Date_Time"
+    # Auxillary
+    RUNMARK = "Run" #Pattern which will be looked to determain the run numner in filename
 
-def inRangeindex(data,param,value,tol):
+def in_range_index(data,param,value,tol):
     index_list = data[(data[param]>=(value-tol)) & (data[param]<=(value+tol))].index
 
     return index_list 
 
-def PrintFilteredData(data, param, value, tol, *args):
+def filter_by_param(data, param, value, tol, *args, **kwargs):
     """
-    Filters data based on a parameter that lies within a specified range.
+    Filters rows in a DataFrame based on whether the values in a specified column 
+    lie within a given range.
 
     Parameters:
         data (pd.DataFrame): The DataFrame to filter.
-        param (str): Column name for filtering.
-        value (float): Center value of the range.
-        tol (float): Tolerance for the range.
-        *args (str): Column names to display. If empty, displays all columns.
+        param (str): The name of the column used for filtering.
+        value (float): The central value of the range for filtering.
+        tol (float): The tolerance to define the range (value ± tol).
+        *args (str): Names of columns to include in the output. If empty, includes all columns.
+        **kwargs:
+            Print (bool, optional): If True, prints the filtered DataFrame. Default is False.
 
     Returns:
-        pd.DataFrame: Filtered data with specified columns.
+        pd.DataFrame: A DataFrame containing the filtered rows and specified columns.
     """
     
     selected_columns = list(args) if args else data.columns  # Use all columns if no args provided
-    ReturnedData = data.loc[(data[param] >= (value - tol)) & (data[param] <= (value + tol)), selected_columns]
+    returned_data = data.loc[((data[param] >= (value - tol)) & (data[param] <= (value + tol))), selected_columns]
     
-    print(ReturnedData)
-    
-    return ReturnedData
+    if kwargs.get("Print", False): 
+        print(returned_data)
+
+    return returned_data
 
 
 class HandleTest:
-    def __init__(self,Path):
-        self.TestPath=Path
+    def __init__(self,path):
+        self.test_path=path
     
     ## The function to load All data based on Pattern
-    def LoadData(self,pattern="*MHz*.txt"):
+    def load_data(self,pattern="*MHz*.txt"):
         """
         Loads and processes data files matching a specified pattern.
 
@@ -107,7 +129,7 @@ class HandleTest:
                         empty DataFrame is returned.
         """
         
-        pattern = os.path.join(self.TestPath, pattern)
+        pattern = os.path.join(self.test_path, pattern)
         pathlist = glob.glob(pattern)
 
         try:
@@ -129,26 +151,29 @@ class HandleTest:
                     print(f"File {file_path} contains No Data and will be skipped.")
                     pass
                 else:
-                    RunLoc=file_name.find("_Run") # Finding Run Number
-                    procfile["Run"] = int(file_name[RunLoc + 4:RunLoc + 6].strip("_.")) if RunLoc > 0 else None
-                    procfile["File Name"] = file_name
+                    runloc=file_name.find(FieldNames.RUNMARK) # Finding Run Number inside file name
+                    procfile[FieldNames.RUN] = int(file_name[runloc + 4:runloc + 6].strip("_.")) if runloc > 0 else None
+                    procfile[FieldNames.FNAME] = file_name
                     nfilelist.append(procfile)
 
             nfile=pd.concat(nfilelist, ignore_index=True)
-            nfile['Date'] = pd.to_datetime(nfile['Date'] + ' ' + nfile['Time'], format='%Y/%m/%d %H:%M:%S')
-            nfile.drop(columns=["Time"], inplace=True)
-            nfile.rename(columns={"Date":"Date_Time"}, inplace=True)
-            self.Data = nfile
-            return self.Data
+            nfile[FieldNames.DATE] = pd.to_datetime(nfile[FieldNames.DATE] + ' ' + nfile[FieldNames.TIME], format='%Y/%m/%d %H:%M:%S')
+            nfile.drop(columns=[FieldNames.TIME], inplace=True)
+            nfile.rename(columns={FieldNames.DATE:FieldNames.DATETIME}, inplace=True)
+            self.data = nfile
+            return self.data
         except Exception as e:
             print(color.BOLD + color.RED + "Exeption raised: " + color.END + color.END + str(e))
-            self.Data=pd.DataFrame()
-            return self.Data
+            self.data=pd.DataFrame()
+            return self.data
     
-    def LoadRecalc(self):
+    def load_recalc(self):
         pass
     
-    def plotHistogram(self,**kwargs):
+    def plot_histogram(self,**kwargs):
+        """
+        Returns Dataframe of selected Run, x y x_err y_err
+        """
         x = kwargs.get("x", FieldNames.PEAK_FIELD)
         y = kwargs.get("y", FieldNames.RS) #second scatter plot
         ParamName = kwargs.get("y", FieldNames.SENS_B) #parameter
@@ -162,13 +187,12 @@ class HandleTest:
         # User Input Normalization: let's make sure 'Run' is always a list
         Run = [Run] if not isinstance(Run, list) else Run
 
-        # Filtering data Corresponding to RunN
-        if Run  == [None]:
-            # Take all Runs if None is entered
-            Dataset = self.Data[(self.Data[ParamName]<=(ParamVal+ParamTol)) & (self.Data[ParamName] >= (ParamVal-ParamTol))]
-        else:
+        Dataset = filter_by_param(self.data, ParamName, ParamVal, ParamTol) 
+        
+        # Filtering data Corresponding to RunN; Takes all Runs if None is entered
+        if Run  != [None]:
             # Filter only data corresponding to entered Run N list
-            Dataset = self.Data[self.Data["Run"].isin(Run) & (self.Data[ParamName]<=(ParamVal+ParamTol)) & (self.Data[ParamName] >= (ParamVal-ParamTol))] 
+            Dataset = Dataset[Dataset["Run"].isin(Run)] 
 
         self.FilteredData = Dataset
         try:
