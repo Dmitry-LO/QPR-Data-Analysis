@@ -107,6 +107,7 @@ def filter_by_param(data, param, value, tol, *args, **kwargs):
 class HandleTest:
     def __init__(self,path):
         self.test_path=path
+        self.debug = True
     
     ## The function to load All data based on Pattern
     def load_data(self,pattern="*MHz*.txt"):
@@ -148,7 +149,7 @@ class HandleTest:
                 )
                 file_name = os.path.basename(file_path)
                 if procfile.empty:
-                    print(f"File {file_path} contains No Data and will be skipped.")
+                    if self.debug: print(f"File {file_path} contains No Data and will be skipped.")
                     pass
                 else:
                     runloc=file_name.find(FieldNames.RUNMARK) # Finding Run Number inside file name
@@ -193,7 +194,6 @@ class HandleTest:
 
         self.FilteredData = Dataset
         try:
-            print(Dataset[ParamName])
             if Dataset.empty:
                 raise ValueError("No Data found with Run and/or Parameter!!")
             

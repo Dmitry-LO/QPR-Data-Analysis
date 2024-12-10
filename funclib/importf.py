@@ -70,7 +70,7 @@ class FieldNames:
     FNAME = "File Name"
     DATETIME = "Date_Time"
     # Auxillary
-    RUNMARK = "Run" #Pattern which will be looked to determain the run numner in filename
+    RUNMARK = "Run" #Pattern which will be looked to determain the run numner in the filename
 
 def in_range_index(data,param,value,tol):
     index_list = data[(data[param]>=(value-tol)) & (data[param]<=(value+tol))].index
@@ -105,8 +105,9 @@ def filter_by_param(data, param, value, tol, *args, **kwargs):
 
 
 class HandleTest:
-    def __init__(self,path):
+    def __init__(self,path,**kwargs):
         self.test_path=path
+        self.debug = kwargs.get("debug", False)
     
     ## The function to load All data based on Pattern
     def load_data(self,pattern="*MHz*.txt"):
@@ -131,6 +132,7 @@ class HandleTest:
         
         pattern = os.path.join(self.test_path, pattern)
         pathlist = glob.glob(pattern)
+        
 
         try:
             # Raise an exception if no files match the pattern
@@ -148,11 +150,19 @@ class HandleTest:
                 )
                 file_name = os.path.basename(file_path)
                 if procfile.empty:
-                    print(f"File {file_path} contains No Data and will be skipped.")
+                    if self.debug: print(f"File {file_path} contains No Data and will be skipped.")
                     pass
                 else:
                     runloc=file_name.find(FieldNames.RUNMARK) # Finding Run Number inside file name
-                    procfile[FieldNames.RUN] = int(file_name[runloc + 4:runloc + 6].strip("_.")) if runloc > 0 else None
+                    extracted_run = file_name[runloc + 3:runloc + 5].strip("_.-")
+
+                    if self.debug: 
+                        print(
+                            f"In your file {color.RED}{file_name}{color.END}, "
+                            f"Run loc was: {color.RED}{runloc}{color.END} "
+                            f"And extracted number: {extracted_run}"
+                        )
+                    procfile[FieldNames.RUN] = int(extracted_run) if (runloc > 0) else None 
                     procfile[FieldNames.FNAME] = file_name
                     nfilelist.append(procfile)
 
@@ -176,10 +186,9 @@ class HandleTest:
         """
         x = kwargs.get("x", FieldNames.PEAK_FIELD)
         y = kwargs.get("y", FieldNames.RS) #second scatter plot
-        ParamName = kwargs.get("y", FieldNames.SENS_B) #parameter
+        ParamName = kwargs.get("ParamName", FieldNames.SENS_B) #parameter
         ParamVal = kwargs.get("ParamVal", 2.5)
         ParamTol = kwargs.get("ParamTol", 0.05)
-        print(ParamVal)
 
         step = kwargs.get("step", 1.0)
         Run = kwargs.get("Run", None)
