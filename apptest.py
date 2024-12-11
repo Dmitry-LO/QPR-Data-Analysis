@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 from funclib.importf import *
@@ -24,8 +24,56 @@ class App:
         # Add parameter selection inputs
         self.param_label = tk.Label(self.control_frame, text="Parameter Name")
         self.param_label.pack(pady=5)
-        self.param_entry = tk.Entry(self.control_frame)
-        self.param_entry.pack(pady=5)
+
+        # Parameter dropdown menu
+        self.param_name_var = tk.StringVar()
+        self.param_dropdown = ttk.Combobox(self.control_frame, textvariable=self.param_name_var, state="readonly")
+        self.param_dropdown['values'] = [
+            FieldNames.SET_TEMP,
+            FieldNames.SET_FREQ,
+            FieldNames.DUTY_CYCLE,
+            FieldNames.PULSE_PERIOD,
+            FieldNames.P_FORW,
+            FieldNames.P_REFL,
+            FieldNames.P_TRANS,
+            FieldNames.CW_POWER,
+            FieldNames.PULSE_POWER,
+            FieldNames.PEAK_POWER,
+            FieldNames.DC_MEAS,
+            FieldNames.P_TRANS_CALC,
+            FieldNames.FREQ_MEAS,
+            FieldNames.Q_FPC,
+            FieldNames.Q_PROBE,
+            FieldNames.C1,
+            FieldNames.C2,
+            FieldNames.HEATER_RESISTANCE,
+            FieldNames.REF_V,
+            FieldNames.HEATER_V,
+            FieldNames.HEATER_P,
+            FieldNames.P_DISS,
+            FieldNames.PEAK_FIELD,
+            FieldNames.RS,
+            FieldNames.SENS_A,
+            FieldNames.SENS_B,
+            FieldNames.SENS_C,
+            FieldNames.SENS_D,
+            FieldNames.MAGNETIC_FIELD,
+            FieldNames.PLL_ATTENUATOR,
+            FieldNames.PLL_PHASE,
+            FieldNames.KEYSIGHT_FORW,
+            FieldNames.KEYSIGHT_REFL,
+            FieldNames.KEYSIGHT_TRANS,
+            FieldNames.DC_CURRENT,
+            FieldNames.DC_REF_CURRENT,
+            FieldNames.FREQ_HAMEG,
+            FieldNames.DATE,
+            FieldNames.TIME,
+            FieldNames.RUN,
+            FieldNames.FNAME,
+            FieldNames.DATETIME,
+            FieldNames.RUNMARK
+        ]
+        self.param_dropdown.pack(pady=5)
 
         self.param_val_label = tk.Label(self.control_frame, text="Parameter Value")
         self.param_val_label.pack(pady=5)
@@ -63,7 +111,7 @@ class App:
         self.path_label.config(fg="black")
 
         # Get user parameters
-        param_name = self.param_entry.get() or FieldNames.SENS_B
+        param_name = self.param_name_var.get() or FieldNames.SENS_B
         param_val = float(self.param_val_entry.get()) if self.param_val_entry.get() else 2.5
         param_tol = float(self.param_tol_entry.get()) if self.param_tol_entry.get() else 0.05
         step = float(self.step_entry.get()) if self.step_entry.get() else 0.5
