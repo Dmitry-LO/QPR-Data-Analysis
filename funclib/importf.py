@@ -2,6 +2,7 @@ import glob, os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from funclib.fieldnames import *
 
 class color:
    PURPLE = '\033[95m'
@@ -14,63 +15,6 @@ class color:
    BOLD = '\033[1m'
    UNDERLINE = '\033[4m'
    END = '\033[0m'
-
-class FieldNames:
-    """
-    Column names in the data file. Edit if something changes!
-
-    Key Fields:
-        PEAK_FIELD: "Peak Field on Sample [mT]".
-        SENS_A: "LS336 A [K]" (similarly for B, C, D).
-        SET_TEMP: Set Temp [K].
-        RS: Surface Resistance [nOhm].
-    """
-    
-    SET_TEMP = "Set Temp [K]"
-    SET_FREQ = "Set Freq [Hz]"
-    DUTY_CYCLE = "Duty Cycle [%]"
-    PULSE_PERIOD = "Pulse Period [ms]"
-    P_FORW = "P_forw (giga)"
-    P_REFL = "P_refl (giga)"
-    P_TRANS = "P_trans (giga)"
-    CW_POWER = "CW Power (Tek)"
-    PULSE_POWER = "Pulse Power (Tek)"
-    PEAK_POWER = "Peak Power (Tek)"
-    DC_MEAS = "DC meas [%] (Tek)"
-    P_TRANS_CALC = "P_trans for calc"
-    FREQ_MEAS = "Freq. (meas.) [Hz]"
-    Q_FPC = "Q_FPC"
-    Q_PROBE = "Q_Probe"
-    C1 = "c1"
-    C2 = "c2"
-    HEATER_RESISTANCE = "Heater Resistance [Ohm]"
-    REF_V = "Ref. Voltage"
-    HEATER_V = "Heater Voltage"
-    HEATER_P = "Heater Power [mW]"
-    P_DISS = "P_diss [mW]"
-    PEAK_FIELD = "Peak Field on Sample [mT]"
-    RS = "Surface Resistance [nOhm]"
-    SENS_A = "LS336 A [K]"
-    SENS_B = "LS336 B [K]"
-    SENS_C = "LS336 C [K]"
-    SENS_D = "LS336 D [K]"
-    MAGNETIC_FIELD = "Magnetic Field [uT]"
-    PLL_ATTENUATOR = "PLL Attenuator [dB]"
-    PLL_PHASE = "PLL Phase [deg]"
-    KEYSIGHT_FORW = "Keysight forw [dBm]"
-    KEYSIGHT_REFL = "Keysight refl [dBm]"
-    KEYSIGHT_TRANS = "Keysight trans [dBm]"
-    DC_CURRENT = "DC current [mA]"
-    DC_REF_CURRENT = "DC Ref current [mA]"
-    FREQ_HAMEG = "Freq Hameg [Hz]"
-    DATE = "Date"
-    TIME = "Time"
-    # Those columns will be added:
-    RUN = "Run"
-    FNAME = "File Name"
-    DATETIME = "Date_Time"
-    # Auxillary
-    RUNMARK = "Run" #Pattern which will be looked to determain the run numner in the filename
 
 def in_range_index(data,param,value,tol):
     index_list = data[(data[param]>=(value-tol)) & (data[param]<=(value+tol))].index
@@ -203,7 +147,7 @@ class HandleTest:
             # Filter only data corresponding to entered Run N list
             Dataset = Dataset[Dataset["Run"].isin(Run)] 
 
-        self.FilteredData = Dataset
+        self.HistogramData = Dataset
         try:
             if Dataset.empty:
                 raise ValueError("No Data found with Run and/or Parameter!!")
@@ -222,5 +166,41 @@ class HandleTest:
 
         except Exception as e:
             print(color.BOLD + color.RED + "Exeption raised: " + color.END + color.END + str(e))
+        
+    def filter_data(self, **kwargs):
+        x_axis = kwargs.get("x", FieldNames.PEAK_FIELD)
+        y_axis = kwargs.get("y", FieldNames.RS) #second scatter plot
+        param_name = kwargs.get("param_name", FieldNames.SENS_B) #parameter
+        param_val = kwargs.get("param_val", 2.5)
+        param_tol = kwargs.get("param_tol", 0.05)
+        res = kwargs.get("Res", 1.0)
+        run = kwargs.get("Run", None)
 
+        # User Input Normalization: let's make sure 'Run' is always a list
+        run = [run] if not isinstance(run, list) else run
+
+        dataset = filter_by_param(self.data, param_name, param_val, param_tol) 
+        
+        # Filtering data Corresponding to RunN; Takes all Runs if None is entered
+        if run  != [None]:
+            # Filter only data corresponding to entered Run N list
+            dataset = dataset[dataset["Run"].isin(run)] 
+
+        self.FilteredData = dataset
+
+        max_x=dataset[x_axis].max() + res
+
+        index = 0
+        sum = 0
+        npoint = 0
+        avg =[]
+        while index <= dataset[x_axis].indexmax():
+            avg.append(dataset[index, x_axis])
+            index += 1
+            npoint += 1
+
+
+        
+        #for
+        #  
         pass
