@@ -47,6 +47,44 @@ def filter_by_param(data, param, value, tol, *args, **kwargs):
 
     return returned_data
 
+def groupe_and_compute(df, x_axis, res=1):
+    # Sort and add a row of zeros at the end
+    dataset_sort = df.sort_values(by=x_axis, ascending=True).reset_index(drop=True)
+    dataset_sort.loc[len(dataset_sort)] = 0
+    
+    index = 0
+    avg_list = []
+    meanlist = []
+    stdlist = []
+    
+    # Iterate through the dataset
+    while index < dataset_sort.index.max():
+        current_val = dataset_sort.loc[index, x_axis]
+        next_val = dataset_sort.loc[index + 1, x_axis]
+        
+        if abs(current_val - next_val) <= res:
+            avg_list.append(current_val)
+        else:
+            avg_list.append(current_val)
+            meanlist.append(np.mean(avg_list))
+            stdlist.append(np.std(avg_list))
+            avg_list = []
+        index += 1
+    
+    # Handle the last group if there's anything left
+    if avg_list:
+        meanlist.append(np.mean(avg_list))
+        stdlist.append(np.std(avg_list))
+    
+    # Create a DataFrame with the results
+    result_df = pd.DataFrame({
+        x_axis: meanlist,
+        x_axis + "_std": stdlist
+    })
+    
+    return result_df
+
+
 
 class HandleTest:
     def __init__(self,path,**kwargs):
