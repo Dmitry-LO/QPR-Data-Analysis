@@ -212,32 +212,50 @@ class HandleTest:
         run = kwargs.get("Run", None)                               #Run number to select data
         pass                                                        #File name to select data
         pass                                                        #Combine runs?
-        pass                                                        #Combaine Files?
-        pass                                                        #Combine Duty Cycle less then 100?
+        combine_run = kwargs.get("combine_run", True)               #Combaine Files?
+        combine_dc = kwargs.get("combine_dc", True)                 #Combine Duty Cycle less then 100?
 
         # User Input Normalization: let's make sure 'Run' is always a list
         run = [run] if not isinstance(run, list) else run
 
-        procdt = filter_by_param(self.data, param_name, param_val, param_tol)
+        procdt = self.data # filter_by_param(self.data, param_name, param_val, param_tol)
 
-        # Building condition based on input. Is a list of (?)
-        criteria = [
-            procdt[FieldNames.RUN].isin(run) #Need to add conditio if None
-        ]
+        dciter=100
+        runiter=[range(len(run))]
+
+        for dciteri, runiteri in dciter, runiter:
+            # Building condition based on input.
+            if combine_run:
+                condition1 = self.data[FieldNames.RUN].isin(run) if run != [None] else pd.Series(True, index=self.data.index)
+            else:
+                condition1 = self.data[FieldNames.RUN].isin(run[runiteri]) if run != [None] else pd.Series(True, index=self.data.index)
+
+            condition2 = (self.data[param_name] <= param_val + param_tol) & (self.data[param_name] >= param_val - param_tol) 
+            condition3 = self.data[FieldNames.DUTY_CYCLE] == (100 if combine_dc else dciteri)  # Exclude type "C"
 
 
-
-        filtered_ds = procdt[criteria[0]]
-
-        
+            # Filtering logic
+            criteria = [
+                condition1,
+                condition2,
+                condition3
+            ]
+            
         # Filtering data Corresponding to RunN; Takes all Runs if None is entered
-        if run  != [None]:
-            # Filter only data corresponding to entered Run N list
-            dataset = dataset[dataset["Run"].isin(run)] 
+        # if run  != [None]:
+        #     # Filter only data corresponding to entered Run N list
+        #     dataset = dataset[dataset["Run"].isin(run)] 
+        combined_criteria = criteria[0]
+        for crit in criteria[1:]:
+            combined_criteria &= crit
 
-        self.FilteredData = dataset
+        filtered_ds = procdt[combined_criteria]
 
-        max_x=dataset[x_axis].max() + res
+        print(filtered_ds)
 
-        finaldata = group_and_compute(dataset, x_axis, y_axis, res)
+        self.FilteredData = filtered_ds
+
+        # max_x=dataset[x_axis].max() + res
+
+        #finaldata = group_and_compute(dataset, x_axis, y_axis, res)
         pass
