@@ -47,43 +47,40 @@ def filter_by_param(data, param, value, tol, *args, **kwargs):
 
     return returned_data
 
-def groupe_and_compute(df, x_axis, res=1):
-    # Sort and add a row of zeros at the end
-    dataset_sort = df.sort_values(by=x_axis, ascending=True).reset_index(drop=True)
-    dataset_sort.loc[len(dataset_sort)] = 0
-    
-    index = 0
-    avg_list = []
-    meanlist = []
-    stdlist = []
-    
-    # Iterate through the dataset
-    while index < dataset_sort.index.max():
-        current_val = dataset_sort.loc[index, x_axis]
-        next_val = dataset_sort.loc[index + 1, x_axis]
-        
-        if abs(current_val - next_val) <= res:
-            avg_list.append(current_val)
-        else:
-            avg_list.append(current_val)
-            meanlist.append(np.mean(avg_list))
-            stdlist.append(np.std(avg_list))
-            avg_list = []
-        index += 1
-    
-    # Handle the last group if there's anything left
-    if avg_list:
-        meanlist.append(np.mean(avg_list))
-        stdlist.append(np.std(avg_list))
-    
-    # Create a DataFrame with the results
-    result_df = pd.DataFrame({
-        x_axis: meanlist,
-        x_axis + "_std": stdlist
-    })
-    
-    return result_df
+def group_and_compute(df_import, x_axis, y_axis, res=1):
+    """
+    Groups values in `x_axis` column based on proximity, and computes the mean and standard deviation
+    for each group.
 
+    Parameters:
+        df (pd.DataFrame): The input DataFrame.
+        x_axis (str): The column name to group by.
+        y_axis (str): The column name to compute statistics on.
+        res (float): The resolution for grouping (proximity threshold).
+
+    Returns:
+        pd.DataFrame: A DataFrame with grouped means and standard deviations.
+    """
+    # Sort by x_axis
+    df = df_import.drop(columns = [FieldNames.DATETIME, FieldNames.FNAME, FieldNames.RUN], inplace = False)
+    df = df.sort_values(by=x_axis).drop_duplicates(subset=y_axis).reset_index(drop=True)
+
+    df.info()
+
+    # Create group labels based on proximity in x_axis
+    df['B_Group'] = (df[x_axis].diff().abs() > res).cumsum()
+
+    # Compute mean and standard deviation for each group
+    grouped = df.groupby('B_Group').agg(
+        {col: ['mean', 'std'] if col in [x_axis, y_axis] else 'mean' for col in df.columns if col != 'B_Group'}
+    ).reset_index()
+
+    # Flatten the multi-level columns
+    grouped.columns = [
+    f"{col[0]}_{col[1]}" if col[1]=="std" else col[0] for col in grouped.columns.to_flat_index()
+    ]
+
+    return grouped
 
 
 class HandleTest:
@@ -206,18 +203,32 @@ class HandleTest:
             print(color.BOLD + color.RED + "Exeption raised: " + color.END + color.END + str(e))
         
     def filter_data(self, **kwargs):
-        x_axis = kwargs.get("x", FieldNames.PEAK_FIELD)
-        y_axis = kwargs.get("y", FieldNames.RS) #second scatter plot
-        param_name = kwargs.get("param_name", FieldNames.SENS_B) #parameter
-        param_val = kwargs.get("param_val", 2.5)
-        param_tol = kwargs.get("param_tol", 0.05)
-        res = kwargs.get("Res", 1.0)
-        run = kwargs.get("Run", None)
+        x_axis = kwargs.get("x", FieldNames.PEAK_FIELD)             #X axis and grouping parameter
+        y_axis = kwargs.get("y", FieldNames.RS)                     #Y axis of the plot
+        res = kwargs.get("Res", 0.7)                                #resolution for grouping by x axis: all data which has more space will be assigened to a new point
+        param_name = kwargs.get("param_name", FieldNames.SENS_B)    #parameter Name for fildering all incoming data
+        param_val = kwargs.get("param_val", 5)                      #parameter Val for fildering all inco,ing data
+        param_tol = kwargs.get("param_tol", 0.05)                   #parameter Tolerance in which data are filted
+        run = kwargs.get("Run", None)                               #Run number to select data
+        pass                                                        #File name to select data
+        pass                                                        #Combine runs?
+        pass                                                        #Combaine Files?
+        pass                                                        #Combine Duty Cycle less then 100?
 
         # User Input Normalization: let's make sure 'Run' is always a list
         run = [run] if not isinstance(run, list) else run
 
-        dataset = filter_by_param(self.data, param_name, param_val, param_tol) 
+        procdt = filter_by_param(self.data, param_name, param_val, param_tol)
+
+        # Building condition based on input. Is a list of (?)
+        criteria = [
+            procdt[FieldNames.RUN].isin(run) #Need to add conditio if None
+        ]
+
+
+
+        filtered_ds = procdt[criteria[0]]
+
         
         # Filtering data Corresponding to RunN; Takes all Runs if None is entered
         if run  != [None]:
@@ -228,17 +239,5 @@ class HandleTest:
 
         max_x=dataset[x_axis].max() + res
 
-        index = 0
-        sum = 0
-        npoint = 0
-        avg =[]
-        while index <= dataset[x_axis].indexmax():
-            avg.append(dataset[index, x_axis])
-            index += 1
-            npoint += 1
-
-
-        
-        #for
-        #  
+        finaldata = group_and_compute(dataset, x_axis, y_axis, res)
         pass
