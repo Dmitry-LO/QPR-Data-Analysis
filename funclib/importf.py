@@ -2,6 +2,7 @@ import glob, os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from itertools import product
 from funclib.fieldnames import *
 
 class color:
@@ -63,16 +64,14 @@ def group_and_compute(df_import, x_axis, y_axis, res=1):
     """
     # Sort by x_axis
     df = df_import.drop(columns = [FieldNames.DATETIME, FieldNames.FNAME, FieldNames.RUN], inplace = False)
-    df = df.sort_values(by=x_axis).drop_duplicates(subset=y_axis).reset_index(drop=True)
-
-    df.info()
+    df = df.sort_values(by=x_axis).reset_index(drop=True) #.drop_duplicates(subset=y_axis)
 
     # Create group labels based on proximity in x_axis
-    df['B_Group'] = (df[x_axis].diff().abs() > res).cumsum()
+    df['Group'] = (df[x_axis].diff().abs() > res).cumsum()
 
     # Compute mean and standard deviation for each group
-    grouped = df.groupby('B_Group').agg(
-        {col: ['mean', 'std'] if col in [x_axis, y_axis] else 'mean' for col in df.columns if col != 'B_Group'}
+    grouped = df.groupby('Group').agg(
+        {col: ['mean', 'std'] if col in [x_axis, y_axis] else 'mean' for col in df.columns if col != 'Group'}
     ).reset_index()
 
     # Flatten the multi-level columns
@@ -203,59 +202,110 @@ class HandleTest:
             print(color.BOLD + color.RED + "Exeption raised: " + color.END + color.END + str(e))
         
     def filter_data(self, **kwargs):
-        x_axis = kwargs.get("x", FieldNames.PEAK_FIELD)             #X axis and grouping parameter
-        y_axis = kwargs.get("y", FieldNames.RS)                     #Y axis of the plot
-        res = kwargs.get("Res", 0.7)                                #resolution for grouping by x axis: all data which has more space will be assigened to a new point
-        param_name = kwargs.get("param_name", FieldNames.SENS_B)    #parameter Name for fildering all incoming data
-        param_val = kwargs.get("param_val", 5)                      #parameter Val for fildering all inco,ing data
-        param_tol = kwargs.get("param_tol", 0.05)                   #parameter Tolerance in which data are filted
-        run = kwargs.get("Run", None)                               #Run number to select data
-        pass                                                        #File name to select data
-        pass                                                        #Combine runs?
-        combine_run = kwargs.get("combine_run", True)               #Combaine Files?
-        combine_dc = kwargs.get("combine_dc", True)                 #Combine Duty Cycle less then 100?
+        x_axis = kwargs.get("x", FieldNames.PEAK_FIELD)             # X axis and grouping parameter
+        y_axis = kwargs.get("y", FieldNames.RS)                     # Y axis of the plot
+        res = kwargs.get("res", 0.7)                                # resolution for grouping by x axis
+        param_name = kwargs.get("param_name", FieldNames.SENS_B)    # parameter name for filtering
+        param_val = kwargs.get("param_val", 5)                      # parameter value for filtering
+        param_tol = kwargs.get("param_tol", 0.1)                    # parameter tolerance for filtering
+        run = kwargs.get("run", None)                               # run number(s) to select data
+        combine_fname = kwargs.get("combine_fname", True)           # combine files or not
+        combine_run = kwargs.get("combine_run", True)               # combine runs or not
+        combine_dc = kwargs.get("combine_dc", True)                 # combine duty cycle or not
 
-        # User Input Normalization: let's make sure 'Run' is always a list
+        # Ensure 'run' is always a list
         run = [run] if not isinstance(run, list) else run
 
-        procdt = self.data # filter_by_param(self.data, param_name, param_val, param_tol)
+        dt = self.data
 
-        dciter=100
-        runiter=[range(len(run))]
-
-        for dciteri, runiteri in dciter, runiter:
-            # Building condition based on input.
-            if combine_run:
-                condition1 = self.data[FieldNames.RUN].isin(run) if run != [None] else pd.Series(True, index=self.data.index)
+        if combine_run:
+            # We're not going to iterate over runs individually
+            if run == [None]:
+                # No run filter at all
+                run_list = [None]  # We'll treat this as a placeholder to do no run filtering
             else:
-                condition1 = self.data[FieldNames.RUN].isin(run[runiteri]) if run != [None] else pd.Series(True, index=self.data.index)
+                # Filter only by the given runs as a set
+                run_list = [run]   # a single entry list with our run filter
+        else:
+            # We will iterate over runs
+            if run == [None]:
+                # Get all unique runs (including None)
+                unique_runs = dt[FieldNames.RUN].drop_duplicates()
+                # unique_runs might contain None, we keep that as well
+                run_list = unique_runs.tolist()
+            else:
+                # Just use the provided runs
+                run_list = run
 
-            condition2 = (self.data[param_name] <= param_val + param_tol) & (self.data[param_name] >= param_val - param_tol) 
-            condition3 = self.data[FieldNames.DUTY_CYCLE] == (100 if combine_dc else dciteri)  # Exclude type "C"
+        dc_list = [True, False]
 
+        if not combine_fname:
+            file_list = list(dt[FieldNames.FNAME].drop_duplicates())
+        else:
+            file_list = ["None"]
 
-            # Filtering logic
+        final_dt_list = []
+        selection_stack = []
+
+        # If combine_run=True and we have a single run_list item that is actually a list of runs
+        # (i.e. run_list = [[1, 2]]), we handle that separately inside the loop.
+        # If combine_run=True and run=[None], run_list = [None], which means no run filter.
+        for file, run_filter, dc in product(file_list, run_list, dc_list):
+
+            # condition1: param-based filtering
+            condition1 = (dt[param_name] <= param_val + param_tol) & (dt[param_name] >= param_val - param_tol)
+
+            # condition2: filename-based filtering
+            if combine_fname:
+                condition2 = dt[FieldNames.FNAME].isin(list(dt[FieldNames.FNAME].drop_duplicates()))
+            else:
+                condition2 = dt[FieldNames.FNAME] == file
+
+            # condition3: run-based filtering
+            if combine_run:
+                # If run_filter = None (means run=[None] originally), no run filtering
+                if run_filter is None:
+                    condition3 = pd.Series(True, index=dt.index)
+                else:
+                    # run_filter is actually a list of runs, e.g. [1,2]
+                    condition3 = dt[FieldNames.RUN].isin(run_filter)
+            else:
+                # If we're here, run_filter is a single run value (or None)
+                if run_filter is None:
+                    # Filter rows where RUN is None
+                    condition3 = dt[FieldNames.RUN].isnull()
+                else:
+                    # Filter rows where RUN == run_filter
+                    condition3 = dt[FieldNames.RUN] == run_filter
+
+            # condition4: duty cycle filtering
+            # If combine_dc is True, take all duty cycles <= 100
+            # If combine_dc is False, split runs into DC=100 (True) and DC<100 (False)
+            if not combine_dc:
+                if dc:
+                    condition4 = dt[FieldNames.DUTY_CYCLE] == 100
+                else:
+                    condition4 = dt[FieldNames.DUTY_CYCLE] < 100
+            else:
+                condition4 = dt[FieldNames.DUTY_CYCLE] <= 100
+
             criteria = [
                 condition1,
                 condition2,
-                condition3
+                condition3,
+                condition4
             ]
-            
-        # Filtering data Corresponding to RunN; Takes all Runs if None is entered
-        # if run  != [None]:
-        #     # Filter only data corresponding to entered Run N list
-        #     dataset = dataset[dataset["Run"].isin(run)] 
-        combined_criteria = criteria[0]
-        for crit in criteria[1:]:
-            combined_criteria &= crit
 
-        filtered_ds = procdt[combined_criteria]
+            filtered_dt = dt[criteria[0] & criteria[1] & criteria[2] & criteria[3]]
+            selection_stack.append(filtered_dt)
+            final_dt_list.append(group_and_compute(filtered_dt, x_axis, y_axis, res))
 
-        print(filtered_ds)
+        final_dt = pd.concat(final_dt_list, ignore_index=True)
+        all_filtered_data = pd.concat(selection_stack, ignore_index=True)
 
-        self.FilteredData = filtered_ds
+        return final_dt, all_filtered_data
 
-        # max_x=dataset[x_axis].max() + res
+        #self.FilteredData = filtered_dt
 
-        #finaldata = group_and_compute(dataset, x_axis, y_axis, res)
+
         pass
