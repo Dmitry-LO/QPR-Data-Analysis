@@ -8,6 +8,14 @@ from funclib.importf import *
 from funclib.plotfunctions import *
 
 
+
+import ctypes
+try:
+    ctypes.windll.shcore.SetProcessDpiAwareness(2)  # DPI awareness enabled
+except:
+    pass
+
+
 class App:
     def __init__(self, root):
         self.root = root
@@ -101,7 +109,7 @@ class App:
         if not hasattr(self, 'folder_path') or not self.folder_path:
             self.path_label.config(text="Please select a folder first!", fg="red")
             return
-
+        self.root.geometry("1920x980")
         self.path_label.config(fg="black")
 
         # Collect user inputs
@@ -153,7 +161,7 @@ class App:
             self.toolbar = NavigationToolbar2Tk(self.canvas, self.plot_frame)
             self.toolbar.update()
             self.canvas_widget = self.canvas.get_tk_widget()
-            self.canvas_widget.pack(fill=tk.BOTH, expand=True)
+            self.canvas_widget.pack(fill=tk.BOTH, expand=False)
             self.canvas.draw()
 
         except Exception as e:

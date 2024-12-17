@@ -12,7 +12,7 @@ def plot_data(data, scatter, **kwargs):
 
     nsig = kwargs.get("nsig")
     x = kwargs.get("x", FieldNames.PEAK_FIELD)
-    y = kwargs.get("y", FieldNames.RS)   
+    y = kwargs.get("y", FieldNames.RS) 
 
     PlXax = scatter[x]
     PlYax = scatter[y]
@@ -139,11 +139,16 @@ def plot_data_forApp(data, scatter, **kwargs):
     freq = 416.0*10**6
     plot1name = f"{freq} MHz, B test mT Run 0"
 
-    MarkSize = 7 * sc1
+    #MarkSize = 7 * sc1
     LineW = 1.5 * sc1
     FontS = 18 * sc1
-    MarkShape = 'o'
+    MarkShape = 's'
     MarkColor = 'none'
+    markeredgecolor = 'black'
+    ecolor = 'black'
+    npal = 2
+    markersize = 6 * sc1
+    markerfacecolor = Pal[npal]
     Lcol = Pal[3]
 
     # Instead of creating a new figure, just get the current one
@@ -152,25 +157,25 @@ def plot_data_forApp(data, scatter, **kwargs):
 
     # Plot the data
     ax.errorbar(PlXax2, PlYax2, xerr= nsig * PlXer2, yerr = nsig * PlYer2,
-                fmt="s",
+                fmt=MarkShape,
                 label=plot1name,
                 linewidth=LineW,
                 color=Lcol,
-                markeredgecolor="black",
-                markerfacecolor=Pal[2],
+                markeredgecolor=markeredgecolor,
+                markerfacecolor=markerfacecolor,
                 capsize=3,
-                ecolor='black',
-                markersize=6,
+                ecolor=ecolor,
+                markersize=markersize,
                 markeredgewidth=1.5)
 
     ax.plot(PlXax, PlYax,
-            MarkShape,
+            fmt='o',
             label=plot1name,
             linewidth=LineW,
             color=Lcol,
             markeredgecolor=Lcol,
-            markerfacecolor=MarkColor,
-            markersize=MarkSize,
+            markerfacecolor=markersize,
+            markersize=markersize,
             markeredgewidth=1.5)
 
     ax.set_xlabel(xlabelN, fontsize=FontS, fontname='serif')
@@ -188,7 +193,7 @@ def plot_data_forApp(data, scatter, **kwargs):
     for spine in ['top', 'right', 'left', 'bottom']:
         ax.spines[spine].set_linewidth(1)
 
-    
+    x
     ax.set_xlim([
         np.min(PlXax) - np.ceil(np.max(PlXax) * 0.05),
         np.max(PlXax) + np.ceil(np.max(PlXax) * 0.05)
