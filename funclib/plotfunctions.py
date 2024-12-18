@@ -61,12 +61,12 @@ def plot_data(data, scatter, **kwargs):
 
     # Plot data
 
-    plt.errorbar(PlXax2, PlYax2, xerr= nsig * PlXer2, yerr = nsig * PlYer2,
-                    fmt="s",
+    plt.errorbar(PlXax2, PlYax2, xerr = nsig * PlXer2, yerr = nsig * PlYer2,
+                    fmt='s',
                     label=plot1name,
                     linewidth=LineW,
                     color=Lcol,
-                    markeredgecolor="black",
+                    markeredgecolor='black',
                     markerfacecolor=Pal[2],
                     capsize=3,
                     ecolor='black',
@@ -157,8 +157,8 @@ def plot_data_forApp(data, scatter, **kwargs):
 
     # Plot the data
     ax.errorbar(PlXax2, PlYax2, xerr= nsig * PlXer2, yerr = nsig * PlYer2,
-                fmt=MarkShape,
-                label=plot1name,
+                fmt = MarkShape,
+                label = plot1name,
                 linewidth=LineW,
                 color=Lcol,
                 markeredgecolor=markeredgecolor,
@@ -168,13 +168,12 @@ def plot_data_forApp(data, scatter, **kwargs):
                 markersize=markersize,
                 markeredgewidth=1.5)
 
-    ax.plot(PlXax, PlYax,
-            fmt='o',
+    ax.plot(PlXax, PlYax, 'o',
             label=plot1name,
             linewidth=LineW,
             color=Lcol,
             markeredgecolor=Lcol,
-            markerfacecolor=markersize,
+            markerfacecolor=markerfacecolor,
             markersize=markersize,
             markeredgewidth=1.5)
 

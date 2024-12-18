@@ -8,12 +8,12 @@ from funclib.importf import *
 from funclib.plotfunctions import *
 
 # Enable High-DPI Awareness
-try:
-    ctypes.windll.shcore.SetProcessDpiAwareness(1)  # Per-monitor DPI awareness
-except AttributeError:
-    ctypes.windll.user32.SetProcessDPIAware()  # Fallback to system DPI awareness
-except Exception as e:
-    print(f"Could not set DPI awareness: {e}")
+# try:
+#     ctypes.windll.shcore.SetProcessDpiAwareness(1)  # Per-monitor DPI awareness
+# except AttributeError:
+#     ctypes.windll.user32.SetProcessDPIAware()  # Fallback to system DPI awareness
+# except Exception as e:
+#     print(f"Could not set DPI awareness: {e}")
 
 def enable_high_dpi_awareness(root=None, scaling=None):
     """Enable high dpi awareness.
