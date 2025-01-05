@@ -11,4 +11,4 @@
 *.tif
 *.tiff
 *.jpg
-
+funclib/__pycache__/*
